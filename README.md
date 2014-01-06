@@ -6,6 +6,11 @@ Resizes, crops, stretches and adds watermarks to your images on the fly.
 Usage:
 
     <?php
+    /**
+     * $_GET['img'] = 'imagefilename.ext';
+     * $_GET['w'] = image width - optional;
+     * $_GET['h'] = image height - optional;
+     */
     require_once '../src/smokiespartakus/Images/ImageSize.php';
     $config = array(
         'alpha' => false,
