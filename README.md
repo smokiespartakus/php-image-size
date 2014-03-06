@@ -17,11 +17,13 @@ Usage:
         'imageType' => ImageSize::TYPE_PNG,
         'watermarkPath' => __DIR__ . '/wm2.png',
         'watermarkPosition' => ImageSize::WM_CENTER,
+		'watermarkWidth' => '50%', // % of final image, fixed px or auto to keep original wm size.
     );
     $Image = ImageSize::createFromGlobals( $config );
     $Image->printImage();
+	?>
 
 Features to come:
+=================
 - Save photos in cache folder
-- Make watermark work
 - Add watermark text

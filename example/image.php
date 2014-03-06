@@ -12,6 +12,7 @@ $config = array(
 	'imageType' => ImageSize::TYPE_PNG,
 	'watermarkPath' => __DIR__ . '/wm2.png',
 	'watermarkPosition' => ImageSize::WM_CENTER,
+	'watermarkWidth' => '50%',
 );
 
 $Image = ImageSize::createFromGlobals( $config );

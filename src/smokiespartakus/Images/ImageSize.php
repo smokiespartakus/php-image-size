@@ -61,6 +61,7 @@ class ImageSize {
 			'outputQuality' => 100,
 			'watermarkPath' => '',
 			'watermarkPosition' => self::WM_CENTER,
+			'watermarkWidth' => 'auto',
 		);
 		$this->_file = $file;
 		$this->_width = $width;
@@ -115,10 +116,10 @@ class ImageSize {
 		} else if ( $type === IMAGETYPE_JPEG ) {
 			$this->_src = imagecreatefromjpeg( $file );
 		}
-		$this->addWatermark();
 		$size = $this->getImageSize();
 		$this->_image = imagecreatetruecolor($size['width'], $size['height']);
 		imagecopyresampled($this->_image, $this->_src, 0, 0, $size['x'], $size['y'], $size['dstWidth'], $size['dstHeight'], $size['srcWidth'], $size['srcHeight']);
+		$this->_image = $this->addWatermark($this->_image);
 	}
 
 
@@ -228,50 +229,61 @@ class ImageSize {
 		);
 	}
 	
-	public function addWatermark( ) {
-		return false;
-		$srcImage = $this->_src;
+	public function addWatermark( $srcImage ) {
+//		$srcImage = $this->_src;
+		$srcWidth = imagesx($srcImage);
+		$srcHeight = imagesy($srcImage);
 		$wm = $this->getWatermark();
 		if( !$wm ) {
 			return false;
 		}
-		$size = $this->getWatermarkSize($wm);
+		$size = $this->getWatermarkSize($wm, $srcImage);
 		$image = imagecreatetruecolor($size['width'], $size['height']);
 		imagealphablending($image,false);
 		imagesavealpha($image, true);
-//		$black = imagecolorallocate($image, 0, 0, 0);
-//		imagecolortransparent($image, $black);
-
-		//imagecopyresampled($image, $wm['image'], 0, 0, $size['x'], $size['y'], $size['width'], $size['height'], $wm['width'], $wm['height']);
-		imagecopyresampled($image, $wm['image'], 0, 0, 0,0, $size['width'], $size['height'], $size['width'], $size['height']);
-		imagealphablending($srcImage, true);
-		imagesavealpha($srcImage, false);
-		imagecopyresampled($srcImage, $image, 0, 0, 0, 0, $size['width'], $size['height'], $size['width'], $size['height']);
-		$this->destroyImage($image);
-		$this->destroyImage($wm['image']);
+		imagecopyresampled($image, $wm['image'], 0, 0, 0,0, $size['width'], $size['height'], $wm['width'], $wm['height']);
+		imagecopy( $srcImage, $image, $srcWidth - $size['width'], $srcHeight - $size['height'], 0, 0, $size['width'], $size['height']);
 		return $srcImage;
 	}
-	public function getWatermarkSize( $wm ) {
-		$size = array('x' => 0, 'y' => 0, 'width' => $this->_initWidth, 'height' => $this->_initHeight);
+
+	public function getWatermarkSize( $wm, $srcImage ) {
+		$size = array('x' => 0, 'y' => 0, 'width' => $wm['width'], 'height' => $wm['height']);
+		
+		// Source image width
+		$srcWidth = imagesx($srcImage);
+		$srcHeight = imagesy($srcImage);
+		
+		// Calc Watermark Size
+		$wmWidth = $this->config['watermarkWidth'];
+		if( $wmWidth != 'auto' ) {
+			if( strstr($wmWidth,'%') !== false ) {
+				$size['width'] = intval($wmWidth) / 100 * $srcWidth;
+				$size['height'] =  $size['width'] / $wm['width'] * $wm['height'];
+			} else {
+				$size['width'] = intval($wmWidth);
+				$size['height'] = intval($wmWidth) / $wm['width'] * $wm['height'];
+			}
+		}
+		// Watermark position
 		switch ( $this->config['watermarkPosition'] ) {
 			case self::WM_TOP_LEFT:
 				// x = y = 0;
 				break;
 			case self::WM_TOP_RIGHT:
-				$size['x'] = intval( $this->_initWidth - $wm['width'] );
+				$size['x'] = intval( $srcWidth - $wm['width'] );
 				break;
 			case self::WM_BOTTOM_RIGHT:
-				$size['x'] = intval( $this->_initWidth - $wm['width'] );
-				$size['y'] = intval( $this->_initHeight - $wm['height'] );
+				$size['x'] = intval( $srcWidth - $wm['width'] );
+				$size['y'] = intval( $srcHeight - $wm['height'] );
 				break;
 			case self::WM_BOTTOM_LEFT:
-				$size['y'] = intval( $this->_initHeight - $wm['height'] );
+				$size['y'] = intval( $srcHeight - $wm['height'] );
 				break;
 			case self::WM_STRETCH:
 				break;
 			default: // WM_CENTER
-				$size['x'] = intval( abs($this->_initWidth - $wm['width']) / 2 );
-				$size['y'] = intval( abs($this->_initHeight - $wm['height']) / 2);
+				$size['x'] = intval( abs($srcWidth - $wm['width']) / 2 );
+				$size['y'] = intval( abs($srcHeight - $wm['height']) / 2);
 				break;
 		}
 		return $size;
